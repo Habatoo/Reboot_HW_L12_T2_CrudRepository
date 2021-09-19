@@ -15,15 +15,15 @@ import java.util.UUID;
  * Класс ProductRepositoryImpl, представляет CRUD репозиторий к таблице
  * объекта {@link Product}.
  * Класс {@link ProductRepositoryImpl} реализует интерфейс {@link ProductRepository}.
- *
+ * <p>
  * Конструктор класса ProductRepositoryImpl:
  * ProductRepositoryImpl(Connection connection)
- *
+ * <p>
  * Критерии приемки
  * Предоставить PR, в котором присутствует реализация класса ProductRepositoryImpl.
  * Каждый публичный метод должен быть покрыт unit тестом.
  */
-public class ProductRepositoryImpl implements ProductRepository{
+public class ProductRepositoryImpl implements ProductRepository {
 
     Statement statement;
 
@@ -57,7 +57,7 @@ public class ProductRepositoryImpl implements ProductRepository{
             int updatedRowCount = statement.executeUpdate(query);
             System.out.println("Create table with rows " + updatedRowCount);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            throw new RuntimeException("Cannot create table.");
         }
     }
 
@@ -70,6 +70,7 @@ public class ProductRepositoryImpl implements ProductRepository{
         String query = "drop table product";
         int updatedRowCount = statement.executeUpdate(query);
         System.out.println("Drop table with rows " + updatedRowCount);
+
     }
 
     /**
@@ -83,9 +84,7 @@ public class ProductRepositoryImpl implements ProductRepository{
 
         String query = "select * from product;";
 
-        try {
-            ResultSet resultSet = statement.executeQuery(query);
-
+        try (ResultSet resultSet = statement.executeQuery(query)) {
             while (resultSet.next()) {
                 String id = resultSet.getString("id");
                 String name = resultSet.getString("name");
@@ -101,13 +100,13 @@ public class ProductRepositoryImpl implements ProductRepository{
                         name,
                         description,
                         ProductCategory.valueOf(productCategory),
-                        LocalDateTime.parse(manufactureDateTime.replace( " " , "T" )),
+                        LocalDateTime.parse(manufactureDateTime.replace(" ", "T")),
                         manufacturer,
                         Boolean.getBoolean(hasExpiryTime),
                         stock));
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Cannot select users.", ex);
         }
 
         return productList;
@@ -142,22 +141,20 @@ public class ProductRepositoryImpl implements ProductRepository{
             String hasExpiryTime = resultSet.getString("has_expiry_time");
             int stock = resultSet.getInt("stock");
 
-
             Product product = new Product(
                     java.util.UUID.fromString(product_id),
                     name,
                     description,
                     ProductCategory.valueOf(productCategory),
-                    LocalDateTime.parse(manufactureDateTime.replace( " " , "T" )),
+                    LocalDateTime.parse(manufactureDateTime.replace(" ", "T")),
                     manufacturer,
                     Boolean.getBoolean(hasExpiryTime),
                     stock);
 
             return product;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Cannot select user.", ex);
         }
-        return null;
     }
 
     /**
@@ -171,10 +168,10 @@ public class ProductRepositoryImpl implements ProductRepository{
 
         try {
             int updatedRowCount = statement.executeUpdate(
-                    "delete from product where id::text ='" + id.toString() +"'");
+                    "delete from product where id::text ='" + id.toString() + "'");
             System.out.println("Delete product completed updateRowCount = " + updatedRowCount);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Cannot delete user.", ex);
         }
     }
 
@@ -191,10 +188,10 @@ public class ProductRepositoryImpl implements ProductRepository{
     public Product save(Product product) {
         if (null != product.id) {
             String query = String.format("insert into product" +
-                    " (id, name, description, category, manufacture_date_time," +
-                    " manufacturer, has_expiry_time, stock) " +
-                    " values " +
-                    "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d')",
+                            " (id, name, description, category, manufacture_date_time," +
+                            " manufacturer, has_expiry_time, stock) " +
+                            " values " +
+                            "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d')",
                     product.getId(),
                     product.getName(),
                     product.getDescription(),
@@ -208,34 +205,31 @@ public class ProductRepositoryImpl implements ProductRepository{
                 boolean result = statement.execute(query);
                 int updatedRowCount = statement.getUpdateCount();
                 System.out.println("Update table with rows " + updatedRowCount);
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+            } catch (SQLException ex) {
+                throw new RuntimeException("Cannot update table with user.", ex);
             }
 
         } else {
-            UUID uuid = UUID.randomUUID();
-            String randomUUIDString = uuid.toString();
             String query = String.format("update product" +
-                            " set id::text = ''%s'', name = '%s', description = '%s', category = '%s'," +
+                            " set id = '%s', name = '%s', description = '%s', category = '%s'," +
                             " manufacture_date_time = '%s'," +
-                            " manufacturer = '%s', has_expiry_time = '%s', stock = '%d'" +
-                            " where id::text = ''%s'';",
-                    randomUUIDString,
+                            " manufacturer = '%s', has_expiry_time = '%s', stock = '%d';",
+                    UUID.randomUUID(),
                     product.getName(),
                     product.getDescription(),
                     product.getCategory(),
                     product.getManufactureDateTime(),
                     product.getManufacturer(),
                     product.isHasExpiryTime(),
-                    product.getStock(),
-                    randomUUIDString);
+                    product.getStock()
+            );
 
             try {
                 boolean result = statement.execute(query);
                 int updatedRowCount = statement.getUpdateCount();
                 System.out.println("Update table with rows " + updatedRowCount);
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+            } catch (SQLException ex) {
+                throw new RuntimeException("Cannot update table with user.", ex);
             }
         }
 
@@ -256,11 +250,9 @@ public class ProductRepositoryImpl implements ProductRepository{
 
         String query = "select * from product where category = any(array['" +
                 category.toString() +
-                "']::product_category[]);" ;
+                "']::product_category[]);";
 
-        try {
-            ResultSet resultSet = statement.executeQuery(query);
-
+        try (ResultSet resultSet = statement.executeQuery(query)) {
             while (resultSet.next()) {
                 String id = resultSet.getString("id");
                 String name = resultSet.getString("name");
@@ -276,13 +268,13 @@ public class ProductRepositoryImpl implements ProductRepository{
                         name,
                         description,
                         ProductCategory.valueOf(productCategory),
-                        LocalDateTime.parse(manufactureDateTime.replace( " " , "T" )),
+                        LocalDateTime.parse(manufactureDateTime.replace(" ", "T")),
                         manufacturer,
                         Boolean.getBoolean(hasExpiryTime),
                         stock));
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Cannot find all by category.", ex);
         }
 
         return productList;

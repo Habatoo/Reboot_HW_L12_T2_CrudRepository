@@ -30,6 +30,7 @@ class ProductRepositoryImplTest {
     private Product product_1;
     private Product product_2;
     private Product product_3;
+    private Product product_4;
     private String url;
     private String login;
     private String password;
@@ -52,8 +53,8 @@ class ProductRepositoryImplTest {
             connection = DriverManager.getConnection(url, login, password);
             productNotEmptyRepository = new ProductRepositoryImpl(connection);
 
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException ex) {
+            throw new RuntimeException("Cannot create connection.", ex);
         }
 
         product_1 = new Product(
@@ -107,6 +108,10 @@ class ProductRepositoryImplTest {
             throwables.printStackTrace();
         }
         productNotEmptyRepository = null;
+        product_1 = null;
+        product_2 = null;
+        product_3 = null;
+        product_4 = null;
         System.setOut(originalOut);
     }
 
@@ -179,7 +184,7 @@ class ProductRepositoryImplTest {
      */
     @Test
     void saveNew_Test() {
-        Assertions.assertEquals("description_4",  productNotEmptyRepository.save(new Product(
+        product_4 = new Product(
                 null,
                 "name_4",
                 "description_4",
@@ -187,7 +192,10 @@ class ProductRepositoryImplTest {
                 LocalDateTime.of(2021, 12, 20, 1, 4),
                 "manufacturer_4",
                 false,
-                500)).getDescription());
+                500);
+
+        Assertions.assertEquals("description_4", productNotEmptyRepository.save(product_4).getDescription());
+        Assertions.assertEquals("manufacturer_4", product_4.getManufacturer());
     }
 
     /**
@@ -235,7 +243,6 @@ class ProductRepositoryImplTest {
                 0,
                 productNotEmptyRepository.findAllByCategory(ProductCategory.TECHNIC).size()
         );
-
     }
 
 }
